@@ -56,5 +56,5 @@ dkms.conf
 blink/.settings/
 blink/Debug/
 blink/Inc
-blink/blink\ Debug
-blink/*.launch
+blink/blink\ Debug.cfg
+blink/blink\ Debug.launch
