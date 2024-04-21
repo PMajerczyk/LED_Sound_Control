@@ -1,0 +1,74 @@
+00:16:11 **** Incremental Build of configuration Debug for project blink ****
+make -j8 all 
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F1 -DSTM32F103xB -DSTM32F103C8Tx -c -I../Inc -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Src/main.o"
+arm-none-eabi-gcc -o "blink.elf" @"objects.list"   -mcpu=cortex-m3 -T"C:\Users\User\OneDrive\Pulpit\blink\blink\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="blink.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: blink.elf
+ 
+arm-none-eabi-size   blink.elf 
+arm-none-eabi-objdump -h -S  blink.elf  > "blink.list"
+   text	   data	    bss	    dec	    hex	filename
+    660	      8	   1568	   2236	    8bc	blink.elf
+Finished building: default.size.stdout
+ 
+Finished building: blink.list
+ 
+20:50:51 **** Incremental Build of configuration Debug for project blink ****
+make -j8 all 
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F1 -DSTM32F103xB -DSTM32F103C8Tx -c -I../Inc -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Src/main.o"
+../Src/main.c: In function 'main':
+../Src/main.c:17:15: error: 'true' undeclared (first use in this function)
+   17 |         while(true)
+      |               ^~~~
+../Src/main.c:3:1: note: 'true' is defined in header '<stdbool.h>'; did you forget to '#include <stdbool.h>'?
+    2 | #include "stm32f1xx.h"
+  +++ |+#include <stdbool.h>
+    3 | 
+../Src/main.c:17:15: note: each undeclared identifier is reported only once for each function it appears in
+   17 |         while(true)
+      |               ^~~~
+make: *** [Src/subdir.mk:25: Src/main.o] Error 1
+"make -j8 all" terminated with exit code 2. Build might be incomplete.
+20:51:17 **** Incremental Build of configuration Debug for project blink ****
+make -j8 all 
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F1 -DSTM32F103xB -DSTM32F103C8Tx -c -I../Inc -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Src/main.o"
+../Src/main.c: In function 'main':
+../Src/main.c:17:15: error: 'true' undeclared (first use in this function)
+   17 |         while(true)
+      |               ^~~~
+../Src/main.c:3:1: note: 'true' is defined in header '<stdbool.h>'; did you forget to '#include <stdbool.h>'?
+    2 | #include "stm32f1xx.h"
+  +++ |+#include <stdbool.h>
+    3 | 
+../Src/main.c:17:15: note: each undeclared identifier is reported only once for each function it appears in
+   17 |         while(true)
+      |               ^~~~
+make: *** [Src/subdir.mk:25: Src/main.o] Error 1
+"make -j8 all" terminated with exit code 2. Build might be incomplete.
+20:51:40 **** Incremental Build of configuration Debug for project blink ****
+make -j8 all 
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F1 -DSTM32F103xB -DSTM32F103C8Tx -c -I../Inc -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Src/main.o"
+arm-none-eabi-gcc -o "blink.elf" @"objects.list"   -mcpu=cortex-m3 -T"C:\Users\User\OneDrive\Pulpit\blink\blink\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="blink.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: blink.elf
+ 
+arm-none-eabi-size   blink.elf 
+arm-none-eabi-objdump -h -S  blink.elf  > "blink.list"
+   text	   data	    bss	    dec	    hex	filename
+    908	      8	   1568	   2484	    9b4	blink.elf
+Finished building: default.size.stdout
+ 
+Finished building: blink.list
+ 
+20:52:16 **** Incremental Build of configuration Debug for project blink ****
+make -j8 all 
+arm-none-eabi-gcc "../Src/main.c" -mcpu=cortex-m3 -std=gnu11 -g3 -DDEBUG -DSTM32 -DSTM32F1 -DSTM32F103xB -DSTM32F103C8Tx -c -I../Inc -I../Drivers/CMSIS/Include -I../Drivers/CMSIS/Device/ST/STM32F1xx/Include -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Src/main.d" -MT"Src/main.o" --specs=nano.specs -mfloat-abi=soft -mthumb -o "Src/main.o"
+arm-none-eabi-gcc -o "blink.elf" @"objects.list"   -mcpu=cortex-m3 -T"C:\Users\User\OneDrive\Pulpit\blink\blink\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="blink.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: blink.elf
+ 
+arm-none-eabi-size   blink.elf 
+arm-none-eabi-objdump -h -S  blink.elf  > "blink.list"
+   text	   data	    bss	    dec	    hex	filename
+    904	      8	   1568	   2480	    9b0	blink.elf
+Finished building: default.size.stdout
+ 
+Finished building: blink.list
+ 
