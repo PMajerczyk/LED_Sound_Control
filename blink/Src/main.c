@@ -9,31 +9,28 @@
 #define PWM_TIMER 50    /* PWM delay */
 #define LED_TIMER 500    /* LED delay */
 
-void configureLED(void);
-void configureSensor(void);
-void TIM3_BaseConfigration(void);
-void TIM3_Start(void);
-void TIM3_PWMConfiguration(void);
-void LED_PWMPinSetup(void);
+void OnBoardLED_Configuration(void);
+void ADC_Configuration(void);
+void ADC_Conversion(void);
+uint32_t ADC_ReadData(void);
+void TIM3_Configration(void);
+void PWM_PinConfiguration(void);
 uint32_t GetSystemTick(void);
 
 volatile uint32_t Tick;	   /* Tick for System Time */
-uint32_t Timer_PWM;    /* Software clock variable for PWM */
-uint32_t Timer_LED;    /* Software clock variable for LED */
 
 int main(void)
 {
 	SysTick_Config(8000);    /* 1ms (8MHz/1000ms) */
 
-	configureLED();
-	configureSensor();
-	TIM3_BaseConfigration();
-	TIM3_Start();
-	TIM3_PWMConfiguration();
-	LED_PWMPinSetup();
+	OnBoardLED_Configuration();
+	ADC_Configuration();
+	TIM3_Configration();
+	PWM_PinConfiguration();
 
-	Timer_PWM = GetSystemTick();
-	Timer_LED = GetSystemTick();
+	uint32_t ADCSample;    /* Analog value variable */
+	uint32_t Timer_PWM = GetSystemTick();    /* Software clock variable for PWM */
+	uint32_t Timer_LED = GetSystemTick();    /* Software clock variable for PWM */
 	while(1)
 	{
 		if((GetSystemTick() - Timer_PWM) > PWM_TIMER)
@@ -45,7 +42,7 @@ int main(void)
 				TIM3->CCR1 = 1;
 		}
 
-		if(DigitalSensor) /* if '1' on GPIOA6 */
+		if(DigitalSensor) /* if '1' on GPIOA5 */
 		{
 			// sensor detected sound
 		}
@@ -55,12 +52,15 @@ int main(void)
 			Timer_LED = GetSystemTick();
 			LED_TOGGLE;     /* LED blink */
 		}
+
+		ADC_Conversion();
+		ADCSample = ADC_ReadData();    /* Sensor Analog value */
 	}
 }
 
 
 
-void configureLED(void)
+void OnBoardLED_Configuration(void)
 {
 	/* LED is connected to PC13 on the APB2 bus */
 
@@ -76,35 +76,60 @@ void configureSensor(void)
 {
 	/* Sensor's digital output is connected to PA5 on the APB2 bus */
 
-	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;    /* I/O port A clock enable */
+	//RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;    /* I/O port A clock enable */
+	//The clock on port A has already been enabled in other function
 
 	/* Input mode and Floating input are reset state */
 }
 
-void TIM3_BaseConfigration(void)
+void ADC_Configuration(void)
+{
+	/* Sensor's analog output is connected to PA0 on the APB2 bus */
+
+	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;    /* I/O port A clock enable */
+
+	GPIOC->CRL &= ~(GPIO_CRL_MODE0);    /* Input mode */
+
+	GPIOC->CRL &= ~(GPIO_CRL_CNF0);    /* Analog mode */
+	//
+	ADC1->CR2 |= ADC_CR2_ADON;    /* A/D converter ON */
+
+	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2;    /* sample time 41.5 cycles */
+
+	ADC1->CR1 = ADC_CR2_CAL;    /* enable calibration */
+	while(ADC1->CR1 & ADC_CR2_CAL);
+}
+
+void ADC_Conversion(void)
+{
+	ADC1->CR2 |= ADC_CR2_SWSTART;   /* Start conversion of regular channels */
+	while(!(ADC1->SR & ADC_SR_EOC));    /* 1 - end of conversion  */
+}
+
+uint32_t ADC_ReadData(void)
+{
+	return ADC1->DR;    /* return data */
+}
+
+void TIM3_Configration(void)
 {
 	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;    /* TIM3 clock enable */
 	TIM3->PSC = (8 - 1);    /* TIM prescaler value */
 	TIM3->ARR = (100 - 1);    /* auto-reload value */
-}
 
-void TIM3_Start(void)
-{
 	TIM3->CNT = 0;    /* counter reset */
 	TIM3->CR1 |= TIM_CR1_CEN;    /* enable timer */
-}
 
-void TIM3_PWMConfiguration(void)
-{
 	TIM3->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;    /* "110" - PWM mode 1 */
 	TIM3->CCR1 = (50 - 1);    /* PWM signal fill (50%) */
 	TIM3->CCER |= TIM_CCER_CC1E;    /* output 1 enable */
 }
 
-void LED_PWMPinSetup(void)
+void PWM_PinConfiguration(void)
 {
 	/* PA6 as PWM T3C1 */
-	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;    /* I/O port A clock enable */
+	//RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;    /* I/O port A clock enable */
+	//The clock on port A has already been enabled in other function
 
 	GPIOA->CRL |= GPIO_CRL_MODE6_0;    /* Output mode, max speed 10 MHz */
 	GPIOA->CRL &= ~(GPIO_CRL_MODE6_1);
