@@ -88,28 +88,32 @@ void ADC_Configuration(void)
 
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;    /* I/O port A clock enable */
 
-	GPIOC->CRL &= ~(GPIO_CRL_MODE0);    /* Input mode */
+	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;    /* ADC1 clock enable */
 
-	GPIOC->CRL &= ~(GPIO_CRL_CNF0);    /* Analog mode */
-	//
-	ADC1->CR2 |= ADC_CR2_ADON;    /* A/D converter ON */
+	GPIOA->CRL &= ~(GPIO_CRL_MODE0);    /* Input mode */
 
-	ADC1->SMPR1 |= ADC_SMPR1_SMP1_2;    /* sample time 41.5 cycles */
+	GPIOA->CRL &= ~(GPIO_CRL_CNF0);    /* Analog mode */
 
-	ADC1->CR1 = ADC_CR2_CAL;    /* enable calibration */
-	while(ADC1->CR1 & ADC_CR2_CAL);
+    ADC1->CR2 |= ADC_CR2_ADON;    /* wake up the ADC from Power Down mode. */
+
+    ADC1->CR2 |= ADC_CR2_CAL;    /* Start calibration */
+    while (ADC1->CR2 & ADC_CR2_CAL);    /* Wait for calibration to finish */
+
+    ADC1->SMPR2 |= ADC_SMPR2_SMP0_2;    /* channel 0 sample time 41.5 cycles */
 }
 
 void ADC_Conversion(void)
 {
-	ADC1->CR2 |= ADC_CR2_SWSTART;   /* Start conversion of regular channels */
-	while(!(ADC1->SR & ADC_SR_EOC));    /* 1 - end of conversion  */
+	ADC1->CR2 |= ADC_CR2_ADON;    /* A/D converter ON */
+    ADC1->CR2 |= ADC_CR2_SWSTART;    /* Start conversion of regular channels */
 }
 
 uint32_t ADC_ReadData(void)
 {
-	return ADC1->DR;    /* return data */
+    while (!(ADC1->SR & ADC_SR_EOC));    /* Wait for end of conversion */
+    return ADC1->DR;    /* Read conversion result */
 }
+
 
 void TIM3_Configration(void)
 {
