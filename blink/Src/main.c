@@ -4,10 +4,10 @@
 #define LED_OFF GPIOC->BSRR |= GPIO_BSRR_BR13;    /* '0' on GPIOC13 */
 #define LED_ON GPIOC->BSRR |= GPIO_BSRR_BS13;    /* '1' on GPIOC13 */
 #define LED_TOGGLE GPIOC->ODR ^= GPIO_ODR_ODR13;    /* switch GPIOC13 */
-#define DigitalSensor (GPIOA->IDR & (1<<5))    /* PA5 state */
+#define DigitalSensor !(GPIOA->IDR & (1<<5))    /* PA5 state */
 
-#define PWM_TIMER 50    /* PWM delay */
-#define LED_TIMER 500    /* LED delay */
+#define PWM_TIMER 5    /* PWM delay */
+#define ADC_TIMER 50    /* ADC delay */
 
 void OnBoardLED_Configuration(void);
 void ADC_Configuration(void);
@@ -15,6 +15,7 @@ void ADC_Conversion(void);
 uint32_t ADC_ReadData(void);
 void TIM3_Configration(void);
 void PWM_PinConfiguration(void);
+void set_RGB(uint32_t R, uint32_t G, uint32_t B);
 uint32_t GetSystemTick(void);
 
 volatile uint32_t Tick;	   /* Tick for System Time */
@@ -28,33 +29,38 @@ int main(void)
 	TIM3_Configration();
 	PWM_PinConfiguration();
 
+	uint32_t counter = 0;
+	uint32_t state = 0;
 	uint32_t ADCSample;    /* Analog value variable */
 	uint32_t Timer_PWM = GetSystemTick();    /* Software clock variable for PWM */
-	uint32_t Timer_LED = GetSystemTick();    /* Software clock variable for PWM */
+	uint32_t Timer_ADC = GetSystemTick();    /* Software clock variable for ADC */
 	while(1)
 	{
 		if((GetSystemTick() - Timer_PWM) > PWM_TIMER)
 		{
 			Timer_PWM = GetSystemTick();
-			if(TIM3->CCR1 < (TIM3->ARR-1))    /* PWM control */
-				TIM3->CCR1 += 1;
-			else
-				TIM3->CCR1 = 1;
+			if (state == 0) set_RGB(counter, 0, 0);    /* PWM control */
+			if (state == 1) set_RGB(0, counter, 0);
+			if (state == 2) set_RGB(0, 0, counter);
+			counter++;
+			if (counter == 100){
+				counter = 0;
+				state++;
+			}
+			if(state == 3) state = 0;
 		}
 
-		if(DigitalSensor) /* if '1' on GPIOA5 */
+		if(DigitalSensor)    /* sensor detected sound */
+			LED_ON
+		else
+			LED_OFF
+
+		if((GetSystemTick() - Timer_ADC) > ADC_TIMER)
 		{
-			// sensor detected sound
+			Timer_ADC = GetSystemTick();
+			ADC_Conversion();
+			ADCSample = ADC_ReadData();    /* Sensor Analog value */
 		}
-
-		if((GetSystemTick() - Timer_LED) > LED_TIMER)
-		{
-			Timer_LED = GetSystemTick();
-			LED_TOGGLE;     /* LED blink */
-		}
-
-		ADC_Conversion();
-		ADCSample = ADC_ReadData();    /* Sensor Analog value */
 	}
 }
 
@@ -124,22 +130,62 @@ void TIM3_Configration(void)
 	TIM3->CNT = 0;    /* counter reset */
 	TIM3->CR1 |= TIM_CR1_CEN;    /* enable timer */
 
+	// Channel 1
 	TIM3->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;    /* "110" - PWM mode 1 */
 	TIM3->CCR1 = (50 - 1);    /* PWM signal fill (50%) */
 	TIM3->CCER |= TIM_CCER_CC1E;    /* output 1 enable */
+
+	// Channel 2
+	TIM3->CCMR1 |= TIM_CCMR1_OC2M_1 | TIM_CCMR1_OC2M_2;    /* "110" - PWM mode 1 */
+	TIM3->CCR2 = (50 - 1);    /* PWM signal fill (50%) */
+	TIM3->CCER |= TIM_CCER_CC2E;    /* output 2 enable */
+
+	// Channel 3
+	TIM3->CCMR2 |= TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2;    /* "110" - PWM mode 1 */
+	TIM3->CCR3 = (50 - 1);    /* PWM signal fill (50%) */
+	TIM3->CCER |= TIM_CCER_CC3E;    /* output 3 enable */
 }
 
 void PWM_PinConfiguration(void)
 {
-	/* PA6 as PWM T3C1 */
+	/* PA6 as PWM T3C1,  PA7 as PWM T3C2, PB0 as PWM T3C3 */
+
 	//RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;    /* I/O port A clock enable */
 	//The clock on port A has already been enabled in other function
+	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;    /* I/O port B clock enable */
 
 	GPIOA->CRL |= GPIO_CRL_MODE6_0;    /* Output mode, max speed 10 MHz */
 	GPIOA->CRL &= ~(GPIO_CRL_MODE6_1);
+	GPIOA->CRL |= GPIO_CRL_MODE7_0;
+	GPIOA->CRL &= ~(GPIO_CRL_MODE7_1);
+	GPIOB->CRL |= GPIO_CRL_MODE0_0;
+	GPIOB->CRL &= ~(GPIO_CRL_MODE0_1);
 
 	GPIOA->CRL &= ~(GPIO_CRL_CNF6_0);    /* Alternate function output Push-pull */
 	GPIOA->CRL |= GPIO_CRL_CNF6_1;
+	GPIOA->CRL &= ~(GPIO_CRL_CNF7_0);
+	GPIOA->CRL |= GPIO_CRL_CNF7_1;
+	GPIOB->CRL &= ~(GPIO_CRL_CNF0_0);
+	GPIOB->CRL |= GPIO_CRL_CNF0_1;
+}
+
+void set_RGB(uint32_t R, uint32_t G, uint32_t B)
+{
+	/* Because we control by low potential we must invert the value */
+
+	R = 100-R;
+	G = 100-G;
+	B = 100-B;
+	if(R > 100) R = 100;
+	if(G > 100) G = 100;
+	if(B > 100) B = 100;
+	if(R <= 0) R = 1;
+	if(G <= 0) G = 1;
+	if(B <= 0) B = 1;
+
+	TIM3->CCR1 = R-1;    /* PWM signals fill */
+	TIM3->CCR2 = G-1;
+	TIM3->CCR3 = B-1;
 }
 
 void SysTick_Handler(void)
