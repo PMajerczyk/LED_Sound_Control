@@ -44,6 +44,7 @@ int main(void) {
             Timer_ADC = GetSystemTick();
             ADC_Conversion();
             uint32_t adcValue = ADC_ReadData();    /* Sensor Analog value */
+            adcValue= 4095 - adcValue;
 
             currentEnergy = adcValue * adcValue;
             sumEnergy -= energyHistory[historyIndex];
