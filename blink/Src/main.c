@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include "stm32f1xx.h"
 
 #define LED_OFF GPIOC->BSRR |= GPIO_BSRR_BR13;    /* '0' on GPIOC13 */
@@ -20,48 +21,66 @@ uint32_t GetSystemTick(void);
 
 volatile uint32_t Tick;	   /* Tick for System Time */
 
-int main(void)
-{
-	SysTick_Config(8000);    /* 1ms (8MHz/1000ms) */
+int main(void) {
+    SysTick_Config(8000);    /* 1ms (8MHz/1000ms) */
 
-	OnBoardLED_Configuration();
-	ADC_Configuration();
-	TIM3_Configration();
-	PWM_PinConfiguration();
+    OnBoardLED_Configuration();
+    ADC_Configuration();
+    TIM3_Configration();
+    PWM_PinConfiguration();
 
-	uint32_t counter = 0;
-	uint32_t state = 0;
-	uint32_t ADCSample;    /* Analog value variable */
-	uint32_t Timer_PWM = GetSystemTick();    /* Software clock variable for PWM */
-	uint32_t Timer_ADC = GetSystemTick();    /* Software clock variable for ADC */
-	while(1)
-	{
-		if((GetSystemTick() - Timer_PWM) > PWM_TIMER)
-		{
-			Timer_PWM = GetSystemTick();
-			if (state == 0) set_RGB(counter, 0, 0);    /* PWM control */
-			if (state == 1) set_RGB(0, counter, 0);
-			if (state == 2) set_RGB(0, 0, counter);
-			counter++;
-			if (counter == 100){
-				counter = 0;
-				state++;
-			}
-			if(state == 3) state = 0;
-		}
+    uint32_t energyHistory[10] = {0};
+    uint32_t historyIndex = 0;
+    uint32_t sumEnergy = 0;    /* variables to store energy levels */
+    uint32_t averageEnergy;
+    uint32_t currentEnergy;
+    uint32_t R = 0, G = 0, B = 0;
+    bool state = true;
+    uint32_t Timer_ADC = GetSystemTick();    /* Software clock variable for ADC */
 
-		if(DigitalSensor)    /* sensor detected sound */
+    while(1) {
+        if ((GetSystemTick() - Timer_ADC) > ADC_TIMER) {
+
+            Timer_ADC = GetSystemTick();
+            ADC_Conversion();
+            uint32_t adcValue = ADC_ReadData();    /* Sensor Analog value */
+
+            currentEnergy = adcValue * adcValue;
+            sumEnergy -= energyHistory[historyIndex];
+            energyHistory[historyIndex] = currentEnergy;    /* energy update */
+            sumEnergy += currentEnergy;
+            averageEnergy = sumEnergy / 10;
+            historyIndex = (historyIndex + 1) % 10;
+
+            if (currentEnergy > 1.2 * averageEnergy) {    /* energy detection */
+            	R = G = B = 0;
+            	if (currentEnergy > 1.5 * averageEnergy) {    /* red and blue for high energy */
+            		if (state == true){
+						B = 100;
+						state = false;
+            		}
+            		else if (state == false){
+            			R = 100;
+						state = true;
+            		}
+				} else {    /* green for low energy */
+					G = 100;
+					state = false;
+				}
+            } else {
+                if (R > 0) R -= 10;    /* intensity reduction */
+                if (G > 0) G -= 10;
+                if (B > 0) B -= 10;
+            }
+            set_RGB(R, G, B);
+        }
+
+        if(DigitalSensor)    /* sensor detected sound on digital output */
 			LED_ON
 		else
 			LED_OFF
 
-		if((GetSystemTick() - Timer_ADC) > ADC_TIMER)
-		{
-			Timer_ADC = GetSystemTick();
-			ADC_Conversion();
-			ADCSample = ADC_ReadData();    /* Sensor Analog value */
-		}
-	}
+    }
 }
 
 
@@ -119,7 +138,6 @@ uint32_t ADC_ReadData(void)
     while (!(ADC1->SR & ADC_SR_EOC));    /* Wait for end of conversion */
     return ADC1->DR;    /* Read conversion result */
 }
-
 
 void TIM3_Configration(void)
 {
